@@ -1,6 +1,6 @@
 #include "tetris.h"
 
-#define TETRIS_VERSION "1.0.1"
+#define TETRIS_VERSION "1.0.2"
 
 #define LEFT 75
 #define RIGHT 77
@@ -36,6 +36,9 @@ Point Shape[][4][4] = {
 	{ { 0,0,-1,0,1,0,-1,-1 },{ 0,0,0,-1,0,1,-1,1 },{ 0,0,-1,0,1,0,1,1 },{ 0,0,0,-1,0,1,1,-1 } },
 	{ { 0,0,1,0,-1,0,1,-1 },{ 0,0,0,1,0,-1,-1,-1 },{ 0,0,1,0,-1,0,-1,1 },{ 0,0,0,-1,0,1,1,1 } },
 	{ { 0,0,-1,0,1,0,0,1 },{ 0,0,0,-1,0,1,1,0 },{ 0,0,-1,0,1,0,0,-1 },{ 0,0,-1,0,0,-1,0,1 } },
+	{ { 0,0,0,0,0,0,0,0 },{ 0,0,0,0,0,0,0,0 },{ 0,0,0,0,0,0,0,0 },{ 0,0,0,0,0,0,0,0 } },
+	{ { 0,0,0,0,0,-1,1,0 },{ 0,0,0,0,-1,0,0,-1 },{ 0,0,0,0,0,1,-1,0 },{ 0,0,0,0,0,1,1,0 } },
+
 };
 
 enum { EMPTY, BRICK, WALL };
@@ -52,45 +55,49 @@ void main()
 
 	setcursortype(NOCURSOR); // 커서가 보이지 않는다. 
 	randomize(); // 난수 발생기 초기화
-	clrscr(); // 화면을 깨끗하게 지운다. (clear screen)
+	for (; 3;) {
+		clrscr(); // 화면을 깨끗하게 지운다. (clear screen)
 	
-	// 네개의 모서리 중 하나라도 맞으면 wall, 아니면 empty
-	for (x = 0; x<BW + 2; x++) {
-		for (y = 0; y<BH + 2; y++) {
-			board[x][y] = (y == 0 || y == BH + 1 || x == 0 || x == BW + 1) ? WALL : EMPTY;
-		}
-	}
-	DrawScreen();
-	nFrame = 20;
-
-	for (; 1;) {
-		brick = random(sizeof(Shape) / sizeof(Shape[0])); // 7개 중에서 랜덤하게 하나를 골라 배출.
-		nx = BW / 2; // 브릭은 처음에는 가운데에서 떨어뜨림
-		ny = 3;
-		rot = 0;
-		PrintBrick(TRUE);
-
-		// 처음 브릭이 놓여야 할 공간에 뭐가 있으면 게임오버(for문 탈출)
-		if (GetAround(nx, ny, brick, rot) != EMPTY) break;
-		
-		nStay = nFrame;
-		for (; 2;) {
-			if (--nStay == 0) {
-				nStay = nFrame;
-				// nStay가 nFrame에서 0까지 다 감소한 경우 한 칸 아래로 자동으로 이동
-				if (MoveDown()) break;
+		// 네개의 모서리 중 하나라도 맞으면 wall, 아니면 empty
+		for (x = 0; x<BW + 2; x++) {
+			for (y = 0; y<BH + 2; y++) {
+				board[x][y] = (y == 0 || y == BH + 1 || x == 0 || x == BW + 1) ? WALL : EMPTY;
 			}
-			// gotoxy(0, 0); printf("%2d", nStay); // 프레임 표시
-			// 키 처리, 바닥에 닿으면 for문 탈출
-			// 새로운 브릭을 생성
-			if (ProcessKey()) break;
-			delay(1000 / 20);
 		}
-	}
+		DrawScreen();
+		nFrame = 20;
 
-	// 게임 오버 후
-	clrscr();
-	gotoxy(30, 12); puts("G A M E  O V E R");
+		for (; 1;) {
+			brick = random(sizeof(Shape) / sizeof(Shape[0])); // 7개 중에서 랜덤하게 하나를 골라 배출.
+			nx = BW / 2; // 브릭은 처음에는 가운데에서 떨어뜨림
+			ny = 3;
+			rot = 0;
+			PrintBrick(TRUE);
+
+			// 처음 브릭이 놓여야 할 공간에 뭐가 있으면 게임오버(for문 탈출)
+			if (GetAround(nx, ny, brick, rot) != EMPTY) break;
+		
+			nStay = nFrame;
+			for (; 2;) {
+				if (--nStay == 0) {
+					nStay = nFrame;
+					// nStay가 nFrame에서 0까지 다 감소한 경우 한 칸 아래로 자동으로 이동
+					if (MoveDown()) break;
+				}
+				// gotoxy(0, 0); printf("%2d", nStay); // 프레임 표시
+				// 키 처리, 바닥에 닿으면 for문 탈출
+				// 새로운 브릭을 생성
+				if (ProcessKey()) break;
+				delay(1000 / 20);
+			}
+		}
+
+		// 게임 오버 후
+		clrscr();
+		gotoxy(30, 12); puts("G A M E  O V E R");
+		gotoxy(25, 14); puts("다시 시작하려면 Y를 누르세요");
+		if (tolower(getch()) != 'y') break;
+	}
 	setcursortype(NORMALCURSOR);
 }
 
@@ -177,12 +184,23 @@ BOOL ProcessKey()
 			}
 		}
 		else { // 방향키 등이 아닌 경우
-			switch (ch) {
+			switch (tolower(ch)) {
 			case ' ':
 				// 바닥에 닿지 않았을 경우 계속 한칸씩 내린다.
 				// 그냥 쭉 내린다.
 				while (MoveDown() == FALSE) { ; }
 				return TRUE; // 바닥에 닿음
+			case ESC:
+				exit(0);
+			case 'p':
+				clrscr();
+				gotoxy(15, 10);
+				puts("Tetris 잠시 중지. 다시 시작하려면 아무 키나 누르세요.");
+				getch();
+				clrscr();
+				DrawScreen();
+				PrintBrick(TRUE);
+				break;
 			}
 		}
 	}

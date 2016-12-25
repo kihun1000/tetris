@@ -20,6 +20,7 @@ int GetAround(int x, int y, int b, int r);
 BOOL MoveDown();
 void TestFull();
 void DrawNext();
+void PrintInfo();
 
 typedef struct Point {
 	int x; // 기준점으로부터의 x 길이
@@ -49,7 +50,8 @@ int nx, ny; // 브릭 기준점의 현재 위치
 int brick; // 현재 브릭
 int rot; // 현재 회전
 int nbrick;// 다음 브릭 
-
+int score;// 점수	
+int bricknum;// 브릭 개수
 void main()
 {
 	int nFrame, nStay;
@@ -68,9 +70,14 @@ void main()
 		}
 		DrawScreen();
 		nFrame = 20;
+		
+		score = 0;
+		bricknum = 0;
 
 		nbrick = random(sizeof(Shape) / sizeof(Shape[0]));// 처음 브릭을 랜덤하게 배출한다.
-		for (;1;) {
+		for (; 1;) {
+			bricknum++;
+		
 			brick = nbrick;
 			nbrick = random(sizeof(Shape) / sizeof(Shape[0])); // 9개 중에서 랜덤하게 하나를 골라 배출.
 			DrawNext();
@@ -94,6 +101,9 @@ void main()
 				// 새로운 브릭을 생성
 				if (ProcessKey()) break;
 				delay(1000 / 20);
+			}
+			if (bricknum % 10 == 0 && nFrame > 2) {
+				nFrame-=1;
 			}
 		}
 
@@ -119,6 +129,7 @@ void DrawScreen()
 	}
 
 	DrawNext();
+	PrintInfo();
 
 	/*for (x = 0; x<BW + 2; x++) {
 		for (y = 0; y<BH + 2; y++) {
@@ -266,7 +277,8 @@ BOOL MoveDown()
 void TestFull()
 {
 	int i, x, y, ty;
-
+	int count = 0;
+	static int arScoreInc[] = { 0,1,3,8,20 };
 	for (i = 0; i<4; i++) {
 		board[nx + Shape[brick][rot][i].x][ny + Shape[brick][rot][i].y] = BRICK;
 	}
@@ -278,6 +290,8 @@ void TestFull()
 			if (board[x][y] != BRICK) break;
 		}
 		if (x == BW + 1) { // 한 줄이 모두 브릭으로 채워져 있는 경우
+			count++;
+
 			for (ty = y; ty>1; ty--) { // 그 윗줄부터 다 한 칸씩 아래로 내린다
 				for (x = 1; x<BW + 1; x++) {
 					board[x][ty] = board[x][ty - 1];
@@ -286,7 +300,15 @@ void TestFull()
 			DrawBoard(); // 업데이트된 board에 따라 게임판을 다시 그린다
 			delay(200);
 		}
+		score += arScoreInc[count];
+		PrintInfo();
 	}
+}
+
+void PrintInfo()
+{
+	gotoxy(50, 9); printf("점수 : %d     ", score);
+	gotoxy(50, 10); printf("벽돌 : %d 개  ", bricknum);
 }
 
 // 다음 도형을 그린다.
